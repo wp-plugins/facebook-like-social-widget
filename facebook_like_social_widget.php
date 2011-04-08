@@ -3,7 +3,7 @@
 Plugin Name: Facebook Like Social Widget
 Plugin URI: http://www.marijnrongen.com/wordpress-plugins/facebook-like-social-widget/
 Description: Place a Facebook Like button on your Wordpress blog as a widget.
-Version: 1.2
+Version: 1.3
 Author: Marijn Rongen
 Author URI: http://www.marijnrongen.com
 */
@@ -18,53 +18,74 @@ class MR_Like_Widget extends WP_Widget {
 	function widget( $args, $instance) {
 		extract( $args );
 		$layout = empty($instance['layout']) ? 'standard' : $instance['layout'];
-		$show_faces = 'false';
-		if ($instance['show_faces'])
-		{
-			$show_faces = 'true';
-		}
-		switch ($layout)
-		{
-			case 'box_count':
-				$height = '65';
-				break;
-			case 'button_count':
-				$height = '20';
-				break;
-			default:
-				if ($instance['show_faces']) {
-					$height = '80';	
-				}
-				else
-				{		
-					$height = '35';
-				}
-				break;	
-		}
+		$show_faces = ($instance['show_faces']) ? 'true' : 'false';
+		$method = (empty($instance['method'])) ? 'iframe' : $instance['method'];
 		if (!empty($instance['url'])) {
 			$url = urlencode($instance['url']);
-		}
-		else {
+		} else {
 			$url = urlencode('http://'.$_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"]);
 		}
 		echo $before_widget;
-		echo "\n	<iframe src=\"http://www.facebook.com/plugins/like.php?href=$url&amp;layout=$layout&amp;show_faces=$show_faces&amp;width=100%&amp;action=".$instance['caption']."&amp;font&amp;colorscheme=".$instance['color']."&amp;height=".$height."px\" scrolling=\"no\" frameborder=\"0\" style=\"border:none; overflow:hidden; width:100%; height:".$height."px;\" allowTransparency=\"true\"></iframe>";
+		if (!empty($instance['title'])) {	
+			echo $before_title . apply_filters('widget_title', $instance['title']) . $after_title;	
+		}		
+		if ($method == 'iframe') {
+			switch ($layout)
+			{
+				case 'box_count':
+					$height = '65';
+					break;
+				case 'button_count':
+					$height = '20';
+					break;
+				default:
+					if ($instance['show_faces']) {
+						$height = '80';	
+					}
+					else
+					{		
+						$height = '35';
+					}
+					break;	
+			}
+			echo "\n	<iframe src=\"http://www.facebook.com/plugins/like.php?href=$url&amp;layout=$layout&amp;show_faces=$show_faces&amp;width=100%&amp;action=".$instance['caption']."&amp;font&amp;colorscheme=".$instance['color']."&amp;height=".$height."px\" scrolling=\"no\" frameborder=\"0\" style=\"border:none; overflow:hidden; width:100%; height:".$height."px;\" allowTransparency=\"true\"></iframe>";
+		} else {
+		echo "\n	<script src=\"http://connect.facebook.net/en_US/all.js#xfbml=1\"></script><fb:like href=\"".$url."\"";
+			if ($layout != 'standard') {
+				echo " layout=\"".$layout."\"";	
+			}
+			echo " show_faces=\"".$show_faces."\" width=\"100%\""; 
+			if ($instance['caption'] != 'like') {
+				echo " action=\"".$instance['caption']."\"";
+			}			 
+			echo " font=\"\"";
+			if ($instance['color'] != 'light') {
+				echo " colorscheme=\"".$instance['color']."\"";
+			}
+			echo "></fb:like>";
+		}
 		echo $after_widget;
 	}
 	
 	function update($new_instance, $old_instance) {
 		$instance = $old_instance;
+		$instance['title'] = strip_tags($new_instance['title']);
 		$instance['layout'] = $new_instance['layout'];
 		$instance['show_faces'] = isset($new_instance['show_faces']) ? true : false;
 		$instance['caption'] = $new_instance['caption'];
 		$instance['color'] = $new_instance['color'];
 		$instance['url'] = strip_tags($new_instance['url']);
+		$instance['method'] = $new_instance['method'];
 		return $instance;
 	}
 	
 	function form($instance) {
-		$instance = wp_parse_args((array) $instance, array( 'layout' => 'standard', 'show_faces' => false, 'caption' => like, 'color' =>light, 'url' => ''));
+		$instance = wp_parse_args((array) $instance, array('title' => '', 'layout' => 'standard', 'show_faces' => false, 'caption' => like, 'color' =>light, 'url' => '', 'method' => 'iframe'));
 		?>
+		<p>
+			<label for="<?php echo $this->get_field_id( 'title' ); ?>">Title (<b>Optional</b> you may leave this empty):</label>
+			<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo $instance['title']; ?>" />
+		</p>
 		<p>
 			<label for="<?php echo $this->get_field_id( 'layout' ); ?>">Button layout:</label>
 			<select id="<?php echo $this->get_field_id( 'layout' ); ?>" name="<?php echo $this->get_field_name( 'layout' ); ?>" class="widefat" style="width:100%;">
@@ -94,6 +115,13 @@ class MR_Like_Widget extends WP_Widget {
 		<p>
 			<label for="<?php echo $this->get_field_id( 'url' ); ?>">URL to like / recommend (<b>Optional</b> leave empty for the URL of the page the button is on):</label>
 			<input class="widefat" id="<?php echo $this->get_field_id( 'url' ); ?>" name="<?php echo $this->get_field_name( 'url' ); ?>" value="<?php echo $instance['url']; ?>" />
+		</p>	
+		<p>
+			<label for="<?php echo $this->get_field_id( 'method' ); ?>">Version:</label>
+			<select id="<?php echo $this->get_field_id( 'method' ); ?>" name="<?php echo $this->get_field_name( 'method' ); ?>" class="widefat" style="width:100%;">
+				<option <?php if ( "iframe" == $instance['method'] ) echo 'selected="selected"'; ?> value="iframe">Iframe</option>
+				<option <?php if ( "xfbml" == $instance['method'] ) echo 'selected="selected"'; ?> value="xfbml">XFBML</option>
+			</select>
 		</p>
 		<?php
 	}
