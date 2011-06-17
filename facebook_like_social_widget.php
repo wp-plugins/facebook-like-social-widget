@@ -2,8 +2,8 @@
 /*
 Plugin Name: Facebook Like Social Widget
 Plugin URI: http://www.marijnrongen.com/wordpress-plugins/facebook-like-social-widget/
-Description: Place a Facebook Like button on your Wordpress blog as a widget.
-Version: 1.3
+Description: Place a Facebook Like button on your Wordpress blog as a widget and/or shortcode.
+Version: 1.4
 Author: Marijn Rongen
 Author URI: http://www.marijnrongen.com
 */
@@ -67,6 +67,34 @@ class MR_Like_Widget extends WP_Widget {
 		echo $after_widget;
 	}
 	
+	function shortcode_handler( $atts, $content=null, $code="" ) {
+		extract( shortcode_atts( array(
+			'method' => 'iframe',
+			'caption' => 'like',
+			'color' => 'light',
+			'url' => ''
+		), $atts ) );
+		if ($url != '') {
+			$url = urlencode($url);
+		} else {
+			$url = get_permalink();
+		}
+		if ($method == 'iframe') {
+			$retval = "<iframe src=\"http://www.facebook.com/plugins/like.php?href=$url&amp;layout=button_count&amp;show_faces=false&amp;width=100%&amp;action=".$caption."&amp;font&amp;colorscheme=".$color."&amp;height=20px\" scrolling=\"no\" frameborder=\"0\" style=\"border:none; overflow:hidden; width:100%; height:20px;\" allowTransparency=\"true\"></iframe>";
+		} else {
+			$retval = "<script src=\"http://connect.facebook.net/en_US/all.js#xfbml=1\"></script><fb:like href=\"".$url."\" layout=\"button_count\"  show_faces=\"false\" width=\"100%\""; 
+			if ($caption != 'like') {
+				$retval .= " action=\"".$caption."\"";
+			}			 
+			$retval .= " font=\"\"";
+			if ($color != 'light') {
+				$retval .= " colorscheme=\"".$color."\"";
+			}
+			$retval .= "></fb:like>";
+		}
+		return $retval;
+	}
+	
 	function update($new_instance, $old_instance) {
 		$instance = $old_instance;
 		$instance['title'] = strip_tags($new_instance['title']);
@@ -126,5 +154,6 @@ class MR_Like_Widget extends WP_Widget {
 		<?php
 	}
 }
+add_shortcode( 'like', array('MR_Like_Widget', 'shortcode_handler') );
 add_action('widgets_init', create_function('', 'return register_widget("MR_Like_Widget");'));
 ?>
